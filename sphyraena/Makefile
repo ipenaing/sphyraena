@@ -7,15 +7,15 @@ SQLITE_DIR = ../sqlite
 SQLITE_VER = 3.6.22
 SQLITESRC_DIR = ../sqlite-$(SQLITE_VER)/src
 CUDA_INCLUDE = $(CUDA)/include
-CUDA_LIBRARY = $(CUDA)/lib
-DB = ../db/hundredthousand.db
+CUDA_LIBRARY = $(CUDA)/lib64
+DB = ../db/dbfile.db
 
 CUSTOM_FLAGS = -DSPHY_DEBUG -DRUNTEST
 
 DEBUG_FLAGS = $(FLAGS) $(CUSTOM_FLAGS) -g3 -I$(SQLITE_DIR) -I$(SQLITESRC_DIR) -I$(CUDA_INCLUDE)
 OPT_FLAGS = -O2 -xHost -ipo
 RELEASE_FLAGS = $(OPT_FLAGS) $(patsubst -DSPHY_DEBUG, ,$(CUSTOM_FLAGS)) -I$(SQLITE_DIR) -I$(SQLITESRC_DIR) -I$(CUDA_INCLUDE)
-LD = -lm -L$(CUDA_LIBRARY) -lcudart
+LD = -lm -L$(CUDA_LIBRARY) -lcudart -ldl -lstdc++
 
 FILES = cleanup.c debug.c driver.c init.c prepare_data.c select.c test.c transfer_data.c transfer_results.c
 DFILES = $(patsubst %.c,debug/%.o,$(FILES))
@@ -38,14 +38,14 @@ $(DFILES): debug/%.o: %.c *.h
 	$(CC) $(DEBUG_FLAGS) -c $< -o $@
 
 debug/vm.o: vm.cu
-	$(NVCC) $(CUSTOM_FLAGS) -I$(SQLITE_DIR) -I$(SQLITESRC_DIR) --ptxas-options="-v" -arch=sm_13 -g -c vm.cu -o debug/vm.o
+	$(NVCC) $(CUSTOM_FLAGS) -I$(SQLITE_DIR) -I$(SQLITESRC_DIR) --ptxas-options="-v" -arch=sm_60 -g -c vm.cu -o debug/vm.o
 
 debug/sphyraena: $(DFILES) debug/sqlite3.o debug/vm.o debug/opcodes.o
-	$(CC) $(DEBUG_FLAGS) $(LD) $(DFILES) debug/opcodes.o debug/sqlite3.o debug/vm.o -o debug/sphyraena
+	$(CC) $(DEBUG_FLAGS) $(DFILES) debug/opcodes.o debug/sqlite3.o debug/vm.o -o debug/sphyraena $(LD)
 	
 
 ptx:
-	$(NVCC) $(CUSTOM_FLAGS) -I$(SQLITE_DIR) -I$(SQLITESRC_DIR) --ptxas-options="-v" -arch=sm_13 -g -ptx vm.cu
+	$(NVCC) $(CUSTOM_FLAGS) -I$(SQLITE_DIR) -I$(SQLITESRC_DIR) --ptxas-options="-v" -arch=sm_60 -g -ptx vm.cu
 
 
 
@@ -56,7 +56,7 @@ $(RFILES): release/%.o: %.c *.h
 	$(RCC) $(RELEASE_FLAGS) -c $< -o $@
 
 release/vm.o: vm.cu
-	$(NVCC) $(CUSTOM_FLAGS) -I$(SQLITE_DIR) -I$(SQLITESRC_DIR) --ptxas-options="-v" -arch=sm_13 -c vm.cu -o release/vm.o
+	$(NVCC) $(CUSTOM_FLAGS) -I$(SQLITE_DIR) -I$(SQLITESRC_DIR) --ptxas-options="-v" -arch=sm_75 -c vm.cu -o release/vm.o
 
 release/sphyraena: $(RFILES) release/sqlite3.o release/vm.o
 	$(RCC) $(RELEASE_FLAGS) $(RFILES) release/sqlite3.o -ipo-c -o release/ipo_out.o

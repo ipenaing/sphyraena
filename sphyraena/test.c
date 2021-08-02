@@ -9,6 +9,8 @@ int sphyraena_test_queries(sphyraena *s)
 	double time_native, time_gpu, time_transfer;
 	double speedup, sum_speedup = 0;
 	double tspeedup, sum_tspeedup = 0;
+	float speedups[13], tspeedups[13], cpus[13], gpus[13], transs[13];
+	int rowss[13];
 
 	r = sphyraena_prepare_data(s, "SELECT * FROM test");
 
@@ -39,8 +41,23 @@ int sphyraena_test_queries(sphyraena *s)
 		tspeedup = time_native / (time_gpu + time_transfer);
 		sum_tspeedup += tspeedup;
 
+		speedups[i] = speedup;
+		tspeedups[i] = tspeedup;
+		cpus[i] = time_native;
+		gpus[i] = time_gpu;
+		transs[i] = time_transfer;
+		rowss[i] = rows;
+
+		printf("Test Case: %s",sphyraena_test_cases[i]);
+		printf("\nspeedup (x)\ttspeedup (x)\tcpu (s)   \tgpu (s)   \ttrans (s) \trows\n");
 		printf("%f\t%f\t%f\t%f\t%f\t%i\n",
 			speedup, tspeedup, time_native, time_gpu, time_transfer, rows);
+	}
+	printf("\nspeedup (x)\ttspeedup (x)\tcpu (s)   \tgpu (s)   \ttrans (s) \trows\n");
+	for(i = 0; i < sphyraena_num_tests; i++) {
+//	    printf("%i Test Case: %s\n",i ,sphyraena_test_cases[i]);
+	    printf("%f\t%f\t%f\t%f\t%f\t%i\n",
+               speedups[i], tspeedups[i], cpus[i], gpus[i], transs[i], rowss[i]);
 	}
 
 	printf("mean speedup: %f\n", sum_speedup / sphyraena_num_tests);

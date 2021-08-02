@@ -885,13 +885,13 @@ extern "C"
 int sphyraena_vm(sphyraena *s)
 {
 	cudaError_t r;
-	cudaMemcpyToSymbol((char*)&cstmt, s->stmt_cpu,
+	cudaMemcpyToSymbol(cstmt, s->stmt_cpu,
 		sizeof(sphyraena_stmt), 0, cudaMemcpyHostToDevice);
-	cudaMemcpyToSymbol((char*)&cdata, s->data_cpu,
+	cudaMemcpyToSymbol(cdata, s->data_cpu,
 		sizeof(sphyraena_data_gpu), 0, cudaMemcpyHostToDevice);
 	cudaMemset(s->results_gpu, 0, sizeof(int));
 	int zero = 0;
-	cudaMemcpyToSymbol((char*)&block_order, &zero, sizeof(int),
+	cudaMemcpyToSymbol(block_order, &zero, sizeof(int),
 		0, cudaMemcpyHostToDevice);
 
 	/*const struct textureReference *texRefPtr;
@@ -917,13 +917,14 @@ int sphyraena_vm(sphyraena *s)
 
 	int blocks = (s->data_cpu->rows + s->threads_per_block - 1) / s->threads_per_block;
 	int thread_rows = 1;
+	int start_row = 0;
 
 	if(blocks >= 65536) {
 		thread_rows = (int) ceilf((float)blocks / (float)65536);
 		blocks = (int) ceilf((float)blocks / (float)thread_rows);
 	}
 
-	VmKernel<<<blocks, s->threads_per_block>>>((char*)s->data_gpu, s->results_gpu, 0, blocks, thread_rows);
+	VmKernel<<<blocks, s->threads_per_block>>>((char*)s->data_gpu, s->results_gpu, start_row, blocks, thread_rows);
 
 	if((r = cudaGetLastError()) != cudaSuccess) {
 		fprintf(stderr, "Cuda error: %s\n", cudaGetErrorString(r));
@@ -950,13 +951,13 @@ int sphyraena_vm_streaming(sphyraena *s)
 		return sphyraena_vm(s);
 
 	cudaError_t r;
-	cudaMemcpyToSymbol((char*)&cstmt, s->stmt_cpu,
+	cudaMemcpyToSymbol(cstmt, s->stmt_cpu,
 		sizeof(sphyraena_stmt), 0, cudaMemcpyHostToDevice);
-	cudaMemcpyToSymbol((char*)&cdata, s->data_cpu,
+	cudaMemcpyToSymbol(cdata, s->data_cpu,
 		sizeof(sphyraena_data_gpu), 0, cudaMemcpyHostToDevice);
 	cudaMemset(s->results_gpu, 0, sizeof(int));
 	int zero = 0;
-	cudaMemcpyToSymbol((char*)&block_order, &zero, sizeof(int),
+	cudaMemcpyToSymbol(block_order, &zero, sizeof(int),
 		0, cudaMemcpyHostToDevice);
 
 	int rows_per_stream = (s->data_cpu->rows + s->stream_width - 1) / s->stream_width;
